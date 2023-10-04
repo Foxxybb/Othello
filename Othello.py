@@ -52,8 +52,8 @@ class Board:
             self.depthButton=tk.Button(text="Depth: 4", command=self.toggleDepth)
             self.depthButton.place(x=300, y=750)
             
-            self.pruneButton=tk.Button(text="Prune: Off", command=self.togglePrune)
-            self.pruneButton.place(x=450, y=750)
+            # self.pruneButton=tk.Button(text="Prune: Off", command=self.togglePrune)
+            # self.pruneButton.place(x=450, y=750)
             
             self.debugButton=tk.Button(text="Debug: Off", command=self.toggleDebug)
             self.debugButton.place(x=650, y=750)
