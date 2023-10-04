@@ -1,41 +1,32 @@
 # Caleb Richardson
-# 102-19-545
-# 11/2/21
-# CSC 475 Fall 2021
-# Othello
-# E:\python\python.exe "$(FULL_CURRENT_PATH)"
+# First build finished on: 11/2/2021
+# Updated Heuristic on: 10/4/2023
+# Othello against AI
 
 import copy
-import random
 import threading
 import tkinter as tk
 
 class Board:
     def __init__(self, main, AI):
-        # setup starting board
-        # mainGame is to seperate instance of game that updates UI from game states for AI
+        # mainGame is the game board that is represented by the GUI, other boards are used in the minimax tree
         self.mainGame = main
-        # toggles if game uses AI as player 2
-        self.AIGame = AI
-        # player 1 (black) goes first
-        self.player = 1
-        self.otherPlayer = 2
-        # to hold all found moves
-        self.moveList = []
-        self.chosenMove = (0,0)
-        self.gameover = False
-        # player 1 score
-        self.oneScore = 0
-        # player 2 score
-        self.twoScore = 0
+        self.AIGame = AI  # if true, player 2 is controlled by AI
+        self.player = 1  # player 1 (black) goes first
+        self.otherPlayer = 2 # player 2 (white) goes first
+        self.moveList = []  # to hold all found moves
+        self.chosenMove = (0, 0)
+        self.gameover = False  # used to determine if game has ended
+        self.oneScore = 0  # player 1 score
+        self.twoScore = 0  # player 2 score
         self.turnCount = 0
-        self.Hscore = 0 # Heuristic value used for tree search
-        self.treeDepth = 4 # needs to be changable with button
-        self.debug = False
+        self.Hscore = 0  # Heuristic value used to determine which move AI chooses
+        self.treeDepth = 4  # used to determine how deep the minimax tree AI uses to make a move
+        self.debug = False  # if true, all possible game boards in minimax tree are printed to console
         
-        self.grid = []
+        self.grid = []  # game board matrix
         for x in range(8):
-            self.grid.append([0,0,0,0,0,0,0,0])
+            self.grid.append([0, 0, 0, 0, 0, 0, 0, 0])  # empty board
         # 0s are empty spaces
         # 1s are black
         # 2s are white
@@ -45,10 +36,10 @@ class Board:
         self.grid[4][3] = 1
         self.grid[4][4] = 2
         
-        self.event = threading.Event() # for pauses
+        self.event = threading.Event()  # for pauses
         
         # setup GUI
-        if self.mainGame == True: # only main game has GUI board
+        if self.mainGame == True:  # only main game has GUI board
             self.window = tk.Tk()
             self.window.title('Othello')
             self.window.geometry("800x800")
@@ -56,25 +47,25 @@ class Board:
             self.window.configure(bg='green')
             
             self.startButton=tk.Button(text="Start", command=self.takeTurn)
-            self.startButton.place(x=10,y=750)
+            self.startButton.place(x=10, y=750)
 
             self.depthButton=tk.Button(text="Depth: 4", command=self.toggleDepth)
-            self.depthButton.place(x=300,y=750)
+            self.depthButton.place(x=300, y=750)
             
             self.pruneButton=tk.Button(text="Prune: Off", command=self.togglePrune)
-            self.pruneButton.place(x=450,y=750)
+            self.pruneButton.place(x=450, y=750)
             
             self.debugButton=tk.Button(text="Debug: Off", command=self.toggleDebug)
-            self.debugButton.place(x=650,y=750)
+            self.debugButton.place(x=650, y=750)
 
             self.blackScoreLabel = tk.Label(text="Black Score: ")
-            self.blackScoreLabel.place(x=600,y=300)
+            self.blackScoreLabel.place(x=600, y=300)
 
             self.whiteScoreLabel = tk.Label(text="White Score: ")
-            self.whiteScoreLabel.place(x=600,y=400)
+            self.whiteScoreLabel.place(x=600, y=400)
             
             self.turnLabel = tk.Label(text="PRESS START TO PLAY")
-            self.turnLabel.place(x=350,y=600)
+            self.turnLabel.place(x=350, y=600)
             
             self.b1=tk.Button(text="",height=4,width=8,bg="green",activebackground="grey",fg="white",command=lambda: self.insertMove(0,0))
             self.b1.grid(row=0,column=0)
@@ -286,22 +277,22 @@ class Board:
             self.buttonList[7,6] = self.b63
             self.buttonList[7,7] = self.b64
             
-    def updateButtons(self): # update GUI
+    def updateButtons(self):  # update GUI
         # take main game info and update colors and functions on each button
         if self.mainGame == True:
             for x in range(8):
                 for y in range(8):
                     if self.grid[x][y] == 0:
-                        self.buttonList[x,y].config(bg='green')
+                        self.buttonList[x, y].config(bg='green')
                     elif self.grid[x][y] == 1:
-                        self.buttonList[x,y].config(bg='black')
+                        self.buttonList[x, y].config(bg='black')
                     elif self.grid[x][y] == 2:
-                        self.buttonList[x,y].config(bg='white')
+                        self.buttonList[x, y].config(bg='white')
             # set grey buttons with moveList
             for moveRow, moveCol in self.moveList:
-                self.buttonList[moveRow,moveCol].config(bg='grey')
+                self.buttonList[moveRow, moveCol].config(bg='grey')
                  
-    def toggleDepth(self): # function for depth toggle button
+    def toggleDepth(self):  # function for depth toggle button
         if self.treeDepth == 2:
             self.depthButton['text'] = 'Depth: 4'
             self.treeDepth = 4
@@ -312,7 +303,7 @@ class Board:
             self.depthButton['text'] = 'Depth: 2'
             self.treeDepth = 2
     
-    def togglePrune(self): # function for depth prune button
+    def togglePrune(self):  # function for depth prune button
         if myAI.pruningEnabled == False:
             myAI.pruningEnabled = True
             self.pruneButton['text'] = 'Prune: On'
@@ -494,8 +485,6 @@ class Board:
                             self.moveList.append((nextRow,nextCol))
                             #self.grid[nextRow][nextCol] = 3
                         break
-                
-#######################################################################
 
     def capturePieces(self, row, col):
         # check adjacent pieces
@@ -678,8 +667,6 @@ class Board:
                     # empty space found
                     elif (self.grid[nextRow][nextCol] == 0):
                         break
-        
-#########################################################################    
        
     def makeMove(self):
         # need to reset 3s so moves are done correctly
@@ -753,7 +740,7 @@ class Board:
             self.player = 1
             self.otherPlayer = 2
 
-    def getScore(self): # handles score for GUI and H value for search
+    def getScore(self):  # handles score for GUI and H value for search
         oneScore = 0
         twoScore = 0
         
@@ -765,37 +752,64 @@ class Board:
                     twoScore += 1
         self.oneScore = oneScore
         self.twoScore = twoScore
+        # IF main game board, update GUI
         if self.mainGame == True:
-            #print ("Player 1 score: " + str(oneScore))
+            # print ("Player 1 score: " + str(oneScore))
             mainGame.blackScoreLabel.config(text='Black Score: ' + str(oneScore))
-            #print ("Player 2 score: " + str(twoScore))
+            # print ("Player 2 score: " + str(twoScore))
             mainGame.whiteScoreLabel.config(text='White Score: ' + str(twoScore))
         
         # H VALUE CALCULATION
         # all captured spaces are 1
-        # all captured spaces in center 4x4 are 2 (row 2-5) through (col 2-5)
+        # all captured spaces in center 4x4 are 2 - (row 2-5) through (col 2-5)
         # all captured spaces in corners are 3
-        Hscore = 0
+
+        # get AI Hscore
+        AIHscore = 0
         for rowH in range(8):
             for colH in range(8):
                 # corners (+3)
                 if (self.grid[rowH][colH] == 2) and ((rowH == 0 and colH == 0) or (rowH == 0 and colH == 7) or (rowH == 7 and colH == 0) or (rowH == 7 and colH == 7)):
-                    #print ("added 3 to score at " + str(rowH) + str(colH))
-                    Hscore += 3
+                    # print ("added 3 to score at " + str(rowH) + str(colH))
+                    AIHscore += 3
                 # edges
-                elif ((self.grid[rowH][colH] == 2) and (rowH == 0 or rowH == 7 or colH == 0 or colH == 7)):
-                    Hscore += 2
+                elif (self.grid[rowH][colH] == 2) and (rowH == 0 or rowH == 7 or colH == 0 or colH == 7):
+                    AIHscore += 2
                 # middle 4x4 (+2)
-                elif (self.grid[rowH][colH] == 2) and (rowH in range(2,6)) and (colH in range(2,6)):
-                    #print ("added 2 to score at " + str(rowH) + str(colH))
-                    Hscore += 2
+                elif (self.grid[rowH][colH] == 2) and (rowH in range(2, 6)) and (colH in range(2, 6)):
+                    # print ("added 2 to score at " + str(rowH) + str(colH))
+                    AIHscore += 2
                 # all other spaces (+1)
-                elif (self.grid[rowH][colH] == 2):
-                    #print ("added 1 to score at " + str(rowH) + str(colH))
-                    Hscore += 1
-        self.Hscore = Hscore
-        #print("H value for current gamestate is: " + str(self.Hscore))
-                    
+                elif self.grid[rowH][colH] == 2:
+                    # print ("added 1 to score at " + str(rowH) + str(colH))
+                    AIHscore += 1
+
+        # get human Hscore
+        humanHscore = 0
+        for rowH in range(8):
+            for colH in range(8):
+                # corners (+3)
+                if (self.grid[rowH][colH] == 1) and ((rowH == 0 and colH == 0) or (rowH == 0 and colH == 7) or (rowH == 7 and colH == 0) or (rowH == 7 and colH == 7)):
+                    # print ("added 3 to score at " + str(rowH) + str(colH))
+                    humanHscore += 3
+                # edges
+                elif (self.grid[rowH][colH] == 1) and (rowH == 0 or rowH == 7 or colH == 0 or colH == 7):
+                    humanHscore += 2
+                # middle 4x4 (+2)
+                elif (self.grid[rowH][colH] == 1) and (rowH in range(2, 6)) and (colH in range(2, 6)):
+                    # print ("added 2 to score at " + str(rowH) + str(colH))
+                    humanHscore += 2
+                # all other spaces (+1)
+                elif self.grid[rowH][colH] == 1:
+                    # print ("added 1 to score at " + str(rowH) + str(colH))
+                    humanHscore += 1
+
+        # update board Hscore with difference
+        self.Hscore = AIHscore - humanHscore
+        # print("H value for current gamestate is: " + str(self.Hscore))
+
+        # HSCORE UPDATE: calculate H score for both players and use difference
+
     def displayTurn(self): # handles turn announcement and gameover announcement
         if self.mainGame == True:
             if self.player == 1:
@@ -816,7 +830,7 @@ class Board:
     def emptyFunc(self):
         pass
     
-    def takeTurn(self): # take a turn 
+    def takeTurn(self):  # take a turn
         if self.debug == True and self.mainGame == True:
             self.displayBoard()
         self.displayMoves()
@@ -836,71 +850,64 @@ class Board:
     def AITurn(self):
         # testing for real AI turn here
         # create root for minimax tree based on current mainGame state
-        treeRootState = Board(False,False) # makes a copy of main gamestate so main game isn't affected????
-        treeRootState.grid = copy.deepcopy(self.grid) # update new board with current gameState
-        treeRootState.moveList = copy.deepcopy(self.moveList) # update new board with movelist
+        treeRootState = Board(False, False)  # makes a copy of main gamestate so main game isn't affected????
+        treeRootState.grid = copy.deepcopy(self.grid)  # update new board with current gameState
+        treeRootState.moveList = copy.deepcopy(self.moveList)  # update new board with movelist
         treeRootState.player = copy.deepcopy(self.player)
         treeRootState.otherPlayer = copy.deepcopy(self.otherPlayer)
         
         # create tree to do miniMax search for most OPTIMAL move
-        miniMaxTree = Tree(treeRootState, self.treeDepth) # root of tree
-        miniMaxTree.branchOut(0) # 0 is starting depth
+        miniMaxTree = Tree(treeRootState, self.treeDepth)  # root of tree
+        miniMaxTree.branchOut(0)  # 0 is starting depth
         
-        aiMove = (0,0) # AI move to be chosen by search
-        maxHScore = 0 # used to compare with other branches in first layer to find best move
+        aiMove = (0, 0)  # AI move to be chosen by search
+        maxHScore = -1000  # used to compare with other branches in first layer to find best move
         eval = 0
-        prunEval = 0 # flag for pruning?
+        prunEval = 0  # flag for pruning?
         
         if myAI.pruningEnabled == True:
             for child in miniMaxTree.children: # search for every layer 1 branch
-                prunEval = myAI.miniMaxPrune(child, self.treeDepth - 1, -200, 200, False) # -1 depth because search starts at layer 1 (alpha,beta)
+                # -1 depth because search starts at layer 1 (alpha,beta)
+                prunEval = myAI.miniMaxPrune(child, self.treeDepth - 1, -200, 200, False)
                 
                 if (prunEval[0] > maxHScore):
                     #print("passing on move: " + str(child.gameState.chosenMove))
                     aiMove = child.gameState.chosenMove
-                    maxHScore = prunEval[0] # starts with minimizing player on layer 1 (False)
+                    maxHScore = prunEval[0]  # starts with minimizing player on layer 1 (False)
                     
-                if prunEval[2] >= prunEval[1]: # if beta >= alpha
+                if prunEval[2] >= prunEval[1]:  # if beta >= alpha
                     break
                     
         elif myAI.pruningEnabled == False:
             for child in miniMaxTree.children: # search for every layer 1 branch
                 eval = myAI.miniMax(child, self.treeDepth - 1, False) # -1 depth because search starts at layer 1 (alpha,beta)
-                
+                print("Hscore: " + str(eval) + " for move " + str(child.gameState.chosenMove))
                 if (eval > maxHScore):
-                    #print("passing on move: " + str(child.gameState.chosenMove))
+                    # print("passing on move: " + str(child.gameState.chosenMove))
                     aiMove = child.gameState.chosenMove
-                    maxHScore = eval # starts with minimizing player on layer 1 (False) 
-        
-        
-        print("Main Game State: ")
+                    maxHScore = eval  # starts with minimizing player on layer 1 (False)
+
+        # print("Main Game State: ")
         print("AI move is: " + str(aiMove))
-        self.insertMove(aiMove[0],aiMove[1])
+        self.insertMove(aiMove[0], aiMove[1])
         
         # REMOVE THIS ONCE MINIMAX IS COMPLETE :)
         # random move placeholder for AI
         
-        #randMove = random.choice(self.moveList)
-        #self.insertMove(randMove[0],randMove[1])
-        
-        
-    
-# END Board CLASS ##############################
-
-### AI CLASS
+        # randMove = random.choice(self.moveList)
+        # self.insertMove(randMove[0],randMove[1])
 
 class AI:
     def __init__(self, prune):
         # need to make toggle
-        self.pruningEnabled = prune # toggle for alpha/beta pruning
-        #self.depth = 2 # depth of tree creation and search
-        self.chosenMove = (0,0) # will result after calculation
-    
-    
+        self.pruningEnabled = prune  # toggle for alpha/beta pruning
+        # self.depth = 2 # depth of tree creation and search
+        self.chosenMove = (0, 0)  # will result after calculation
+
     def miniMax(self, tree, depth, maximPlayer): # (mainGame.grid, layers of minMax 2-6?, true)
         # first call is different, need to run separate search for every tree in first layer after root
         if (depth == 0) or tree.gameState.gameover:
-            #print("returning Hscore: " + str(tree.gameState.Hscore) + " and move: " + str(tree.gameState.chosenMove))
+            # print("returning Hscore: " + str(tree.gameState.Hscore) + " and move: " + str(tree.gameState.chosenMove))
             return tree.gameState.Hscore
         if maximPlayer == True:
             maxEval = -200 
@@ -937,63 +944,54 @@ class AI:
                 #if beta <= alpha:
                 #    break
             return minEval,alpha,beta
-        
-### END AI CLASS
-
-### TREE CLASS
 
 class Tree:
     def __init__(self, gameState, maxDepth):
     
-        self.children = [] # list of game boards
-        self.gameState = gameState # will probably be Board object
-        self.maxDepth = maxDepth # used to count layers to branch
+        self.children = []  # list of game boards
+        self.gameState = gameState  # will probably be Board object
+        self.maxDepth = maxDepth  # used to count layers to branch
         
-    def branchOut(self, currentDepth): # create children from gamestate using board functions
-        if self.gameState.moveList: # if there are possible moves
+    def branchOut(self, currentDepth):  # create children from gamestate using board functions
+        if self.gameState.moveList:  # if there are possible moves
             if mainGame.debug == True:
                 print("Branching movelist:")
                 print(self.gameState.moveList)
-            for move in self.gameState.moveList: # create new tree for each possible move
-            
-                #need to litter this shit with print statements to DEBUG !!!
+            for move in self.gameState.moveList:  # create new tree for each possible move
                 
-                newGameState = Board(False,False) # new board to copy grid and movelist to
+                newGameState = Board(False, False) # new board to copy grid and movelist to
                 newGameState.grid = copy.deepcopy(self.gameState.grid) # update new board with current gameState
                 # need to add IF statement IF moveList is EMPTY to STOP BRANCH?
                 newGameState.moveList = copy.deepcopy(self.gameState.moveList) # update new board with movelist
                 newGameState.player = copy.deepcopy(self.gameState.player)
                 newGameState.otherPlayer = copy.deepcopy(self.gameState.otherPlayer)
-                #code to progress forward in gamestate
-                #print("inserting move: " + str(move))
-                newGameState.insertMove(move[0],move[1])
+                # code to progress forward in gamestate
+                # print("inserting move: " + str(move))
+                newGameState.insertMove(move[0], move[1])
                 
                 # add new board to list of children
-                treeToAdd = Tree(newGameState,self.maxDepth) # new Tree with gamestate
-                self.children.append(treeToAdd) # add new tree to child list
-                #print("Child added with H value of: " + str(treeToAdd.gameState.Hscore))
+                treeToAdd = Tree(newGameState, self.maxDepth)  # new Tree with gamestate
+                self.children.append(treeToAdd)  # add new tree to child list
+                # print("Child added with H value of: " + str(treeToAdd.gameState.Hscore))
                   
         else:
             print("Tried to branch empty movelist ")
             
         newDepth = currentDepth + 1 
         #print ("depth is: " + str(newDepth))
-        if newDepth != self.maxDepth: # if depth is not met, loop branching for all children
-            for child in self.children: # branchout for each child
+        if newDepth != self.maxDepth:  # if depth is not met, loop branching for all children
+            for child in self.children:  # branchout for each child
                 child.branchOut(newDepth)
         
         else:
-            #print("TREE LAYER COMPLETE")
+            # print("TREE LAYER COMPLETE")
             pass
-            
-
-### END TREE CLASS
 
 # MAIN #########################
 
 mainGame = Board(True,True) # (mainGame, AIgame)
 
-myAI = AI(False) # (prune)
+myAI = AI(False)  # (prune)
 
 mainGame.window.mainloop()
 
