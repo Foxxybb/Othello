@@ -844,13 +844,11 @@ class Board:
         #print ("") # neat and tidy
         if (self.AIGame == True) and (self.player == 2):
             print("Thinking...")
-            #self.event.wait(1) # fake processing time
             self.AITurn()
             
     def AITurn(self):
-        # testing for real AI turn here
         # create root for minimax tree based on current mainGame state
-        treeRootState = Board(False, False)  # makes a copy of main gamestate so main game isn't affected????
+        treeRootState = Board(False, False)  # makes a copy of main gamestate so main game isn't affected
         treeRootState.grid = copy.deepcopy(self.grid)  # update new board with current gameState
         treeRootState.moveList = copy.deepcopy(self.moveList)  # update new board with movelist
         treeRootState.player = copy.deepcopy(self.player)
@@ -863,7 +861,7 @@ class Board:
         aiMove = (0, 0)  # AI move to be chosen by search
         maxHScore = -1000  # used to compare with other branches in first layer to find best move
         eval = 0
-        prunEval = 0  # flag for pruning?
+        prunEval = 0  # flag for pruning
         
         if myAI.pruningEnabled == True:
             for child in miniMaxTree.children: # search for every layer 1 branch
@@ -890,12 +888,6 @@ class Board:
         # print("Main Game State: ")
         print("AI move is: " + str(aiMove))
         self.insertMove(aiMove[0], aiMove[1])
-        
-        # REMOVE THIS ONCE MINIMAX IS COMPLETE :)
-        # random move placeholder for AI
-        
-        # randMove = random.choice(self.moveList)
-        # self.insertMove(randMove[0],randMove[1])
 
 class AI:
     def __init__(self, prune):
